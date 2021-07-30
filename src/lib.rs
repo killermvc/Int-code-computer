@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum ParameterModes {
     Position,
     Immediate,
     Relative,
+    RelativeImmediate,
 }
 
 #[derive(Clone)]
@@ -38,7 +39,11 @@ impl<'a> Memory {
 
     pub fn read(&self, index: usize) -> i64 {
         if index >= self.initial_data.len() {
-            self.expanded_memory[&index]
+            if !self.expanded_memory.contains_key(&index) {
+                0
+            } else {
+                self.expanded_memory[&index]
+            }
         } else {
             self.initial_data[index]
         }
@@ -157,6 +162,7 @@ impl IntCodeProgram {
             6 => Instructions::JMPF,
             7 => Instructions::LESS,
             8 => Instructions::EQ,
+            9 => Instructions::ARB,
             99 => Instructions::HLT,
             _ => panic!("Unknown instruction {}", instr_opc),
         }
@@ -192,7 +198,13 @@ impl IntCodeProgram {
             match modes % 10 {
                 0 => modes_arr[i] = ParameterModes::Position,
                 1 => modes_arr[i] = ParameterModes::Immediate,
-                2 => modes_arr[i] = ParameterModes::Relative,
+                2 => {
+                    if modes_arr[i] == ParameterModes::Immediate {
+                        modes_arr[i] = ParameterModes::RelativeImmediate;
+                    } else {
+                        modes_arr[i] = ParameterModes::Relative;
+                    }
+                }
                 _ => panic!("Unknown mode"),
             }
             modes = modes / 10;
@@ -217,9 +229,12 @@ impl IntCodeProgram {
                 }
                 ParameterModes::Immediate => args[i] = self.memory.read(self.instruction_pointer),
                 ParameterModes::Relative => {
-                    args[i] = self.memory.read(
-                        self.base as usize + self.memory.read(self.instruction_pointer) as usize,
-                    )
+                    args[i] = self
+                        .memory
+                        .read((self.base + self.memory.read(self.instruction_pointer)) as usize);
+                }
+                ParameterModes::RelativeImmediate => {
+                    args[i] = self.base + self.memory.read(self.instruction_pointer);
                 }
             }
             self.instruction_pointer += 1;
@@ -228,7 +243,10 @@ impl IntCodeProgram {
     }
 
     fn execute_instruction(&mut self, instr: Instructions, args: [i64; 3]) {
-        println!("Executing instruction {:?} with args {:?}", instr, args);
+        println!(
+            "Executing instruction {:?} with args {:?}, base: {}",
+            instr, args, self.base
+        );
         let store_adress;
         let mut value = 0;
         match instr {
