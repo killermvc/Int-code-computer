@@ -224,7 +224,6 @@ impl IntCodeProgram {
         self.instruction_pointer += 1;
         let (instruction, instruction_data, modes) = self.parse_instruction(instruction);
         let mut args = [0; 3];
-        println!("pointer: {}", self.instruction_pointer - 1);
         let arg_count = instruction_data.arguments_count as usize;
         for i in 0usize..arg_count {
             match modes[i] {
@@ -249,10 +248,6 @@ impl IntCodeProgram {
     }
 
     fn execute_instruction(&mut self, instr: Instructions, args: [i64; 3]) {
-        println!(
-            "Executing instruction {:?} with args {:?}, base: {}",
-            instr, args, self.base
-        );
         let store_adress;
         let mut value = 0;
         match instr {
