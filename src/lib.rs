@@ -69,6 +69,7 @@ enum Instructions {
     LESS,
     EQ,
     ARB,
+    MOV,
     HLT,
 }
 
@@ -148,6 +149,10 @@ impl IntCodeProgram {
             Instructions::ARB,
             Instruction::new(1, vec![ParameterModes::Position]),
         );
+        self.opcodes.insert(
+            Instructions::MOV,
+            Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Immediate]),
+        );
         self.opcodes
             .insert(Instructions::HLT, Instruction::new(0, vec![]));
     }
@@ -163,6 +168,7 @@ impl IntCodeProgram {
             7 => Instructions::LESS,
             8 => Instructions::EQ,
             9 => Instructions::ARB,
+            10 => Instructions::MOV,
             99 => Instructions::HLT,
             _ => panic!("Unknown instruction {}", instr_opc),
         }
@@ -298,6 +304,10 @@ impl IntCodeProgram {
             Instructions::ARB => {
                 self.base += args[0];
                 store_adress = -1;
+            }
+            Instructions::MOV => {
+                value = args[0];
+                store_adress = args[1];
             }
             Instructions::HLT => panic!("Hlt in execute_instruction"),
         }
