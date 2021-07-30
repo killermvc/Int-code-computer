@@ -24,20 +24,32 @@ impl Instruction {
 
 #[derive(Clone)]
 pub struct Memory {
-    data: Vec<i64>,
+    initial_data: Vec<i64>,
+    expanded_memory: HashMap<usize, i64>,
 }
 
 impl<'a> Memory {
     pub fn new(p_data: Vec<i64>) -> Memory {
-        Memory { data: p_data }
+        Memory {
+            initial_data: p_data,
+            expanded_memory: HashMap::new(),
+        }
     }
 
     pub fn read(&self, index: usize) -> i64 {
-        self.data[index]
+        if index >= self.initial_data.len() {
+            self.expanded_memory[&index]
+        } else {
+            self.initial_data[index]
+        }
     }
 
     pub fn write(&mut self, index: usize, value: i64) {
-        self.data[index] = value;
+        if index >= self.initial_data.len() {
+            self.expanded_memory.insert(index, value);
+        } else {
+            self.initial_data[index] = value;
+        }
     }
 }
 
@@ -51,13 +63,14 @@ enum Instructions {
     JMPF,
     LESS,
     EQ,
+    ARB,
     HLT,
 }
 
 pub struct IntCodeProgram {
     instruction_pointer: usize,
     memory: Memory,
-    base: usize,
+    base: i64,
     opcodes: HashMap<Instructions, Instruction>,
     input: Vec<i64>,
     next_input: usize,
@@ -125,6 +138,10 @@ impl IntCodeProgram {
                     ParameterModes::Immediate,
                 ],
             ),
+        );
+        self.opcodes.insert(
+            Instructions::ARB,
+            Instruction::new(1, vec![ParameterModes::Position]),
         );
         self.opcodes
             .insert(Instructions::HLT, Instruction::new(0, vec![]));
@@ -200,9 +217,9 @@ impl IntCodeProgram {
                 }
                 ParameterModes::Immediate => args[i] = self.memory.read(self.instruction_pointer),
                 ParameterModes::Relative => {
-                    args[i] = self
-                        .memory
-                        .read(self.base + self.memory.read(self.instruction_pointer) as usize)
+                    args[i] = self.memory.read(
+                        self.base as usize + self.memory.read(self.instruction_pointer) as usize,
+                    )
                 }
             }
             self.instruction_pointer += 1;
@@ -260,7 +277,11 @@ impl IntCodeProgram {
                 }
                 store_adress = args[2];
             }
-            _ => panic!("Unknown instruction (or halt) in execute_instruction"),
+            Instructions::ARB => {
+                self.base += args[0];
+                store_adress = -1;
+            }
+            Instructions::HLT => panic!("Hlt in execute_instruction"),
         }
         if store_adress < 0 {
             return;
