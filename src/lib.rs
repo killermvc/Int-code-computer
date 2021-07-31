@@ -73,6 +73,9 @@ enum Instructions {
     HLT,
 }
 
+type OutputHandle = fn(i64);
+type InputHandle = fn() -> i64;
+
 pub struct IntCodeProgram {
     instruction_pointer: usize,
     memory: Memory,
@@ -81,9 +84,33 @@ pub struct IntCodeProgram {
     input: Vec<i64>,
     next_input: usize,
     output: Vec<i64>,
+    output_handle: OutputHandle,
+    input_handle: InputHandle,
 }
 
 impl IntCodeProgram {
+    pub fn new(
+        p_memory: Memory,
+        input: Vec<i64>,
+        output_handle: OutputHandle,
+        input_handle: InputHandle,
+    ) -> IntCodeProgram {
+        let opcodes = HashMap::new();
+        let mut program = IntCodeProgram {
+            instruction_pointer: 0,
+            memory: p_memory,
+            opcodes: opcodes,
+            base: 0,
+            input: input,
+            next_input: 0,
+            output: Vec::new(),
+            output_handle: output_handle,
+            input_handle: input_handle,
+        };
+        program.initialize_opcodes();
+        program
+    }
+
     fn initialize_opcodes(&mut self) {
         self.opcodes.insert(
             Instructions::ADD,
@@ -174,21 +201,6 @@ impl IntCodeProgram {
         }
     }
 
-    pub fn new(p_memory: Memory, input: Vec<i64>) -> IntCodeProgram {
-        let opcodes = HashMap::new();
-        let mut program = IntCodeProgram {
-            instruction_pointer: 0,
-            memory: p_memory,
-            opcodes: opcodes,
-            base: 0,
-            input: input,
-            next_input: 0,
-            output: Vec::new(),
-        };
-        program.initialize_opcodes();
-        program
-    }
-
     fn parse_instruction(
         &self,
         instruction_opc: i64,
@@ -260,11 +272,18 @@ impl IntCodeProgram {
                 store_adress = args[2];
             }
             Instructions::IN => {
-                value = self.input[self.next_input];
-                self.next_input += 1;
+                if self.next_input >= self.input.len() {
+                    let handle = self.input_handle;
+                    value = handle();
+                } else {
+                    value = self.input[self.next_input];
+                    self.next_input += 1;
+                }
                 store_adress = args[0];
             }
             Instructions::OUT => {
+                let handle = self.output_handle;
+                handle(args[0]);
                 self.output.push(args[0]);
                 store_adress = -1;
             }

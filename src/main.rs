@@ -6,6 +6,8 @@ use lib::IntCodeProgram;
 use lib::Memory;
 use std::vec;
 
+use std::io;
+
 fn main() {
 	let args: Vec<String> = std::env::args().collect();
 	let arg_count = args.len();
@@ -31,8 +33,18 @@ fn main() {
 	let memory: vec::Vec<i64> = input.split(",").map(|cell| cell.parse().unwrap()).collect();
 	let memory = Memory::new(memory);
 
-	let program = IntCodeProgram::new(memory.clone(), program_input);
+	let program = IntCodeProgram::new(
+		memory.clone(),
+		program_input,
+		|val| println!("Program Output: {}", val),
+		|| {
+			println!("Please enter an integer value");
+			let stdin = io::stdin();
+			let mut input = String::new();
+			stdin.read_line(&mut input).unwrap();
+			input.replace("\n", "").parse::<i64>().unwrap()
+		},
+	);
 	let result = program.run();
-
 	println!("{:?}", result);
 }
