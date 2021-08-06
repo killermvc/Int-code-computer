@@ -1,8 +1,9 @@
 use std::fs;
 
+mod intcode;
 mod lib;
 
-use lib::IntCodeProgram;
+use intcode::IntCodeProgram;
 use lib::Memory;
 use std::vec;
 
