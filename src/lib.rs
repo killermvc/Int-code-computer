@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum ParameterModes {
@@ -72,4 +73,134 @@ pub enum Instructions {
     MOV,
     GRT,
     HLT,
+}
+
+impl fmt::Display for Instructions {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Instructions {
+    pub fn get_instruction_from_opc(instr_opc: usize) -> Instructions {
+        match instr_opc {
+            1 => Instructions::ADD,
+            2 => Instructions::MUL,
+            3 => Instructions::IN,
+            4 => Instructions::OUT,
+            5 => Instructions::JMP,
+            6 => Instructions::JMPF,
+            7 => Instructions::LESS,
+            8 => Instructions::EQ,
+            9 => Instructions::ARB,
+            10 => Instructions::MOV,
+            11 => Instructions::GRT,
+            99 => Instructions::HLT,
+            _ => panic!("Unknown instruction {}", instr_opc),
+        }
+    }
+
+    pub fn get_instruction_from_name(instr_name: &str) -> Result<Instructions, String> {
+        match instr_name.to_lowercase().as_str() {
+            "add" => Ok(Instructions::ADD),
+            "mul" => Ok(Instructions::MUL),
+            "in" => Ok(Instructions::IN),
+            "out" => Ok(Instructions::OUT),
+            "jmp" => Ok(Instructions::JMP),
+            "jmpf" => Ok(Instructions::JMPF),
+            "less" => Ok(Instructions::LESS),
+            "eq" => Ok(Instructions::EQ),
+            "arb" => Ok(Instructions::ARB),
+            "mov" => Ok(Instructions::MOV),
+            "grt" => Ok(Instructions::GRT),
+            "hlt" => Ok(Instructions::HLT),
+            _ => Err(format!("Unknown instruction {}", instr_name)),
+        }
+    }
+
+    pub fn new() -> HashMap<Instructions, Instruction> {
+        let mut opcodes = HashMap::new();
+        opcodes.insert(
+            Instructions::ADD,
+            Instruction::new(
+                3,
+                vec![
+                    ParameterModes::Position,
+                    ParameterModes::Position,
+                    ParameterModes::Immediate,
+                ],
+            ),
+        );
+        opcodes.insert(
+            Instructions::MUL,
+            Instruction::new(
+                3,
+                vec![
+                    ParameterModes::Position,
+                    ParameterModes::Position,
+                    ParameterModes::Immediate,
+                ],
+            ),
+        );
+        opcodes.insert(
+            Instructions::IN,
+            Instruction::new(1, vec![ParameterModes::Immediate]),
+        );
+        opcodes.insert(
+            Instructions::OUT,
+            Instruction::new(1, vec![ParameterModes::Position]),
+        );
+        opcodes.insert(
+            Instructions::JMP,
+            Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Position]),
+        );
+        opcodes.insert(
+            Instructions::JMPF,
+            Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Position]),
+        );
+        opcodes.insert(
+            Instructions::LESS,
+            Instruction::new(
+                3,
+                vec![
+                    ParameterModes::Position,
+                    ParameterModes::Position,
+                    ParameterModes::Immediate,
+                ],
+            ),
+        );
+        opcodes.insert(
+            Instructions::EQ,
+            Instruction::new(
+                3,
+                vec![
+                    ParameterModes::Position,
+                    ParameterModes::Position,
+                    ParameterModes::Immediate,
+                ],
+            ),
+        );
+        opcodes.insert(
+            Instructions::ARB,
+            Instruction::new(1, vec![ParameterModes::Position]),
+        );
+        opcodes.insert(
+            Instructions::MOV,
+            Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Immediate]),
+        );
+        opcodes.insert(
+            Instructions::GRT,
+            Instruction::new(
+                3,
+                vec![
+                    ParameterModes::Position,
+                    ParameterModes::Position,
+                    ParameterModes::Immediate,
+                ],
+            ),
+        );
+        opcodes.insert(Instructions::HLT, Instruction::new(0, vec![]));
+
+        opcodes
+    }
 }

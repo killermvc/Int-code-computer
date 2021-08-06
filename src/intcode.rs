@@ -23,11 +23,10 @@ impl IntCodeProgram {
 		output_handle: OutputHandle,
 		input_handle: InputHandle,
 	) -> IntCodeProgram {
-		let opcodes = HashMap::new();
 		let mut program = IntCodeProgram {
 			instruction_pointer: 0,
 			memory: p_memory,
-			opcodes: opcodes,
+			opcodes: Instructions::new(),
 			base: 0,
 			input: input,
 			next_input: 0,
@@ -35,110 +34,7 @@ impl IntCodeProgram {
 			output_handle: output_handle,
 			input_handle: input_handle,
 		};
-		program.initialize_opcodes();
 		program
-	}
-
-	fn initialize_opcodes(&mut self) {
-		self.opcodes.insert(
-			Instructions::ADD,
-			Instruction::new(
-				3,
-				vec![
-					ParameterModes::Position,
-					ParameterModes::Position,
-					ParameterModes::Immediate,
-				],
-			),
-		);
-		self.opcodes.insert(
-			Instructions::MUL,
-			Instruction::new(
-				3,
-				vec![
-					ParameterModes::Position,
-					ParameterModes::Position,
-					ParameterModes::Immediate,
-				],
-			),
-		);
-		self.opcodes.insert(
-			Instructions::IN,
-			Instruction::new(1, vec![ParameterModes::Immediate]),
-		);
-		self.opcodes.insert(
-			Instructions::OUT,
-			Instruction::new(1, vec![ParameterModes::Position]),
-		);
-		self.opcodes.insert(
-			Instructions::JMP,
-			Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Position]),
-		);
-		self.opcodes.insert(
-			Instructions::JMPF,
-			Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Position]),
-		);
-		self.opcodes.insert(
-			Instructions::LESS,
-			Instruction::new(
-				3,
-				vec![
-					ParameterModes::Position,
-					ParameterModes::Position,
-					ParameterModes::Immediate,
-				],
-			),
-		);
-		self.opcodes.insert(
-			Instructions::EQ,
-			Instruction::new(
-				3,
-				vec![
-					ParameterModes::Position,
-					ParameterModes::Position,
-					ParameterModes::Immediate,
-				],
-			),
-		);
-		self.opcodes.insert(
-			Instructions::ARB,
-			Instruction::new(1, vec![ParameterModes::Position]),
-		);
-		self.opcodes.insert(
-			Instructions::MOV,
-			Instruction::new(2, vec![ParameterModes::Position, ParameterModes::Immediate]),
-		);
-		self.opcodes.insert(
-			Instructions::GRT,
-			Instruction::new(
-				3,
-				vec![
-					ParameterModes::Position,
-					ParameterModes::Position,
-					ParameterModes::Immediate,
-				],
-			),
-		);
-		self.opcodes
-			.insert(Instructions::HLT, Instruction::new(0, vec![]));
-	}
-
-	fn get_instruction_from_opc(instr_opc: usize) -> Instructions {
-		match instr_opc {
-			1 => Instructions::ADD,
-			2 => Instructions::MUL,
-			3 => Instructions::IN,
-			4 => Instructions::OUT,
-			5 => Instructions::JMP,
-			6 => Instructions::JMPF,
-			7 => Instructions::LESS,
-			8 => Instructions::EQ,
-			9 => Instructions::ARB,
-			10 => Instructions::MOV,
-			11 => Instructions::GRT,
-			99 => Instructions::HLT,
-			_ => panic!("Unknown instruction {}", instr_opc),
-		}
 	}
 
 	fn parse_instruction(
@@ -146,7 +42,7 @@ impl IntCodeProgram {
 		instruction_opc: i64,
 	) -> (Instructions, &Instruction, Vec<ParameterModes>) {
 		let instruction = instruction_opc % 100;
-		let instruction = IntCodeProgram::get_instruction_from_opc(instruction as usize);
+		let instruction = Instructions::get_instruction_from_opc(instruction as usize);
 		let instruction_data = &self.opcodes[&instruction];
 		let mut modes = instruction_opc / 100;
 		let mut modes_arr = instruction_data.default_modes.clone();

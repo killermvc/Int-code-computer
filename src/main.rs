@@ -3,8 +3,8 @@ use std::fs;
 mod intcode;
 mod lib;
 
+use crate::lib::Memory;
 use intcode::IntCodeProgram;
-use lib::Memory;
 use std::vec;
 
 use std::io;
