@@ -2,7 +2,18 @@
 name = "int_code_computer"
 version = "0.1.0"
 edition = "2018"
+default-run = "main"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+[[bin]]
+name = "asm_compiler"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
+
+[lib]
+name = "lib"

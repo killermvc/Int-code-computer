@@ -100,6 +100,23 @@ impl Instructions {
         }
     }
 
+    pub fn get_instruction_opc(&self) -> usize {
+        match self {
+            Instructions::ADD => 1,
+            Instructions::MUL => 2,
+            Instructions::IN => 3,
+            Instructions::OUT => 4,
+            Instructions::JMP => 5,
+            Instructions::JMPF => 6,
+            Instructions::LESS => 7,
+            Instructions::EQ => 8,
+            Instructions::ARB => 9,
+            Instructions::MOV => 10,
+            Instructions::GRT => 11,
+            Instructions::HLT => 99,
+        }
+    }
+
     pub fn get_instruction_from_name(instr_name: &str) -> Result<Instructions, String> {
         match instr_name.to_lowercase().as_str() {
             "add" => Ok(Instructions::ADD),
