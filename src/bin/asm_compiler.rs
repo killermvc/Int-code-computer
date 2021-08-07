@@ -1,4 +1,4 @@
-use lib::{Instructions, ParameterModes};
+use lib::instructions_module::{Instructions, ParameterModes};
 use std::fs;
 use std::io::Write;
 

@@ -1,4 +1,5 @@
-use crate::lib::{Instruction, Instructions, Memory, ParameterModes};
+use crate::lib::instructions_module::{Instruction, Instructions, ParameterModes};
+use crate::lib::Memory;
 use std::collections::HashMap;
 
 type OutputHandle = fn(i64);
@@ -23,7 +24,7 @@ impl IntCodeProgram {
 		output_handle: OutputHandle,
 		input_handle: InputHandle,
 	) -> IntCodeProgram {
-		let mut program = IntCodeProgram {
+		let program = IntCodeProgram {
 			instruction_pointer: 0,
 			memory: p_memory,
 			opcodes: Instructions::new(),
