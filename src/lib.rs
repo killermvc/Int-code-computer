@@ -85,21 +85,21 @@ pub mod instructions_module {
     }
 
     impl Instructions {
-        pub fn get_instruction_from_opc(instr_opc: usize) -> Instructions {
+        pub fn get_instruction_from_opc(instr_opc: usize) -> Result<Instructions, String> {
             match instr_opc {
-                1 => Instructions::ADD,
-                2 => Instructions::MUL,
-                3 => Instructions::IN,
-                4 => Instructions::OUT,
-                5 => Instructions::JMP,
-                6 => Instructions::JMPF,
-                7 => Instructions::LESS,
-                8 => Instructions::EQ,
-                9 => Instructions::ARB,
-                10 => Instructions::MOV,
-                11 => Instructions::GRT,
-                99 => Instructions::HLT,
-                _ => panic!("Unknown instruction {}", instr_opc),
+                1 => Ok(Instructions::ADD),
+                2 => Ok(Instructions::MUL),
+                3 => Ok(Instructions::IN),
+                4 => Ok(Instructions::OUT),
+                5 => Ok(Instructions::JMP),
+                6 => Ok(Instructions::JMPF),
+                7 => Ok(Instructions::LESS),
+                8 => Ok(Instructions::EQ),
+                9 => Ok(Instructions::ARB),
+                10 => Ok(Instructions::MOV),
+                11 => Ok(Instructions::GRT),
+                99 => Ok(Instructions::HLT),
+                _ => Err(format!("Unknown instruction {}", instr_opc)),
             }
         }
 

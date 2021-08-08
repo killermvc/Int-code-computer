@@ -13,6 +13,8 @@ fn main() {
 	let filename = &args[1];
 
 	let input = fs::read_to_string(filename).expect("Unable to read file");
+	//Remove all blank lines
+	let input = input.replace("\n\n", "\n");
 	let input: Vec<Vec<&str>> = input
 		.split("\n")
 		.map(|arg| arg.split(" ").collect())
@@ -21,6 +23,9 @@ fn main() {
 	let opcodes = Instructions::new();
 	let mut output: String = String::new();
 	for instruction in input {
+		if instruction[0].is_empty() {
+			continue;
+		}
 		let instr = Instructions::get_instruction_from_name(instruction[0]).unwrap();
 		let arg_count = opcodes[&instr].arguments_count;
 		if instruction.len() != arg_count as usize + 1 {
@@ -87,7 +92,7 @@ fn main() {
 	let output_name: String;
 	match res {
 		Some(i) => output_name = format!("{}.icc", String::from(&filename[0..i])),
-		None => output_name = String::from(filename),
+		None => output_name = format!("{}.icc", filename),
 	}
 
 	let file = fs::File::create(&output_name);

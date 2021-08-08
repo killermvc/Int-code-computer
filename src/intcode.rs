@@ -44,6 +44,10 @@ impl IntCodeProgram {
 	) -> (Instructions, &Instruction, Vec<ParameterModes>) {
 		let instruction = instruction_opc % 100;
 		let instruction = Instructions::get_instruction_from_opc(instruction as usize);
+		let instruction = match instruction {
+			Ok(o) => o,
+			Err(e) => panic!("{} at {}", e, self.instruction_pointer),
+		};
 		let instruction_data = &self.opcodes[&instruction];
 		let mut modes = instruction_opc / 100;
 		let mut modes_arr = instruction_data.default_modes.clone();
