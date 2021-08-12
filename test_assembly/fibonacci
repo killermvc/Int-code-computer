@@ -8,16 +8,14 @@ MOV $0 #1
 MOV $1 #2
 JMP $1 $35
 
-one:
 OUT $0
 HLT
 
-two:
 OUT $0
 OUT $1
 HLT
 
-three: OUT #1
+OUT #1
 OUT #2
 ADD #1 #2 #3
 OUT #3
