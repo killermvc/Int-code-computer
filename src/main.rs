@@ -43,7 +43,11 @@ fn main() {
 			let stdin = io::stdin();
 			let mut input = String::new();
 			stdin.read_line(&mut input).unwrap();
-			input.replace("\n", "").parse::<i64>().unwrap()
+			input
+				.replace("\n", "")
+				.replace("\r", "")
+				.parse::<i64>()
+				.unwrap()
 		},
 	);
 	let result = program.run();
