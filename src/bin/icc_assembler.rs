@@ -14,6 +14,8 @@ fn get_mode_number_from_mode(mode: ParameterModes) -> (char, bool) {
 	};
 }
 
+const DEFAULT_MODE: ParameterModes = ParameterModes::Relative;
+
 fn parse_argument(arg: &String) -> Result<(ParameterModes, String, bool), String> {
 	let mut char_iter = arg.chars();
 	let first_char = match char_iter.next() {
@@ -25,9 +27,9 @@ fn parse_argument(arg: &String) -> Result<(ParameterModes, String, bool), String
 	if first_char == '$' {
 		mode = ParameterModes::Immediate;
 	} else if first_char == '#' {
-		mode = ParameterModes::Relative;
-	} else {
 		mode = ParameterModes::Position;
+	} else {
+		mode = DEFAULT_MODE;
 		if !first_char.is_numeric() && first_char != '-' {
 			is_tag = true;
 		}
@@ -37,7 +39,7 @@ fn parse_argument(arg: &String) -> Result<(ParameterModes, String, bool), String
 	second_char = char_iter.next();
 
 	let mut output = String::new();
-	if mode == ParameterModes::Position {
+	if mode == DEFAULT_MODE {
 		output.push(first_char);
 	}
 	if let Some(c) = second_char {
