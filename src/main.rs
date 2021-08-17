@@ -1,7 +1,7 @@
 use std::fs;
 
 mod intcode;
-mod lib;
+pub mod lib;
 
 use crate::lib::Memory;
 use intcode::IntCodeProgram;
