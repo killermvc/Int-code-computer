@@ -39,7 +39,7 @@ pub mod instructions_module {
 	use std::collections::HashMap;
 	use std::fmt;
 
-	#[derive(Copy, Clone, PartialEq)]
+	#[derive(Copy, Clone, PartialEq, Debug)]
 	pub enum ParameterModes {
 		Position,
 		Immediate,

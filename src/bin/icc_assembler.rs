@@ -66,6 +66,7 @@ fn parse_instruction<'a>(instr: &'a String) -> (&'a str, Option<&'a str>) {
 	(instr, tag)
 }
 
+#[derive(Debug)]
 struct TagPosition {
 	line: usize,
 	column: usize,
@@ -98,8 +99,8 @@ fn main() {
 	let mut output: Vec<String> = Vec::new();
 	let opcodes = Instructions::new();
 	let mut line: usize = 0;
-	let mut tag_definitions: HashMap<String, usize> = HashMap::new();
-	let mut tag_uses: HashMap<String, TagPosition> = HashMap::new();
+	let mut tag_definitions: HashMap<String, TagPosition> = HashMap::new();
+	let mut tag_uses: HashMap<String, Vec<TagPosition>> = HashMap::new();
 	let mut current_address: usize = 0;
 	for mut instruction in input {
 		line += 1;
@@ -116,7 +117,25 @@ fn main() {
 
 		let (instr, tag_option) = parse_instruction(&instr[0]);
 		if let Some(t) = tag_option {
-			tag_definitions.insert(String::from(t), current_address);
+			if t == "data" {
+				println!("Error: data is a reserved tag and can't be defined");
+				return;
+			}
+			if tag_definitions.contains_key(t) {
+				println!(
+					"Error: duplicate tag <{}> (already defined at line {})",
+					t, tag_definitions[t].line
+				);
+				return;
+			}
+			tag_definitions.insert(
+				String::from(t),
+				TagPosition {
+					line: line,
+					column: 0,
+					address: current_address,
+				},
+			);
 		}
 
 		let instr = Instructions::get_instruction_from_name(instr);
@@ -158,14 +177,15 @@ fn main() {
 			modes.push(mode);
 			args.push(arg_string.clone());
 			if is_tag {
-				tag_uses.insert(
-					arg_string,
-					TagPosition {
-						line: line,
-						column: i + 2,
-						address: current_address,
-					},
-				);
+				if !tag_uses.contains_key(&arg_string) {
+					tag_uses.insert(arg_string.clone(), Vec::new());
+				}
+				let tags = tag_uses.get_mut(&arg_string).unwrap();
+				tags.push(TagPosition {
+					line: line,
+					column: i + 2,
+					address: current_address,
+				});
 			}
 		}
 		modes.reverse();
@@ -194,16 +214,30 @@ fn main() {
 		current_address += 1;
 	}
 
-	for (tag, pos) in tag_uses {
+	tag_definitions.insert(
+		String::from("data"),
+		TagPosition {
+			line: 0,
+			column: 0,
+			address: output.len(),
+		},
+	);
+
+	for (tag, positions) in tag_uses {
 		if !tag_definitions.contains_key(&tag) {
-			println!(
-				"Undefined tag {} at (address: {}, line:{}, column: {})",
-				tag, pos.address, pos.line, pos.column
-			);
+			for pos in positions {
+				println!(
+					"Undefined tag {} at (address: {}, line:{}, column: {})",
+					tag, pos.address, pos.line, pos.column
+				);
+			}
 			return;
 		}
-		let address = tag_definitions[&tag];
-		output[pos.address] = format!("{}", address);
+
+		for pos in positions {
+			let address = tag_definitions[&tag].address;
+			output[pos.address] = format!("{}", address);
+		}
 	}
 
 	let res = filename[1..].find(".");
@@ -223,4 +257,5 @@ fn main() {
 	};
 	file.write(output.join(",").trim_start().as_bytes())
 		.unwrap();
+	println!("Succesfully compiled {} to {}", filename, output_name);
 }

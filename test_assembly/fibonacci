@@ -1,25 +1,23 @@
-ARB $100
+ARB $data
 IN 0
 EQ 0, $1, 3
-JMP 3, $one
+JMP 3, $print_one
 Eq 0, $2, 3
-JMP 3, $two
+JMP 3, $print_two
 MOV $0, 1
 MOV $1, 2
-JMP $1, $other
+MOV $1, 3
+JMP $1, $print_two
 
-one:
+print_one:
 OUT $0
 HLT
 
-two:
+print_two:
 OUT $0
 OUT $1
+JMP 3, $fibonacci
 HLT
-
-other:
-OUT 1
-OUT 2
 
 fibonacci:
 ADD 1, 2, 3
