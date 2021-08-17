@@ -1,12 +1,12 @@
 ARB $100
 IN #0
-EQ #0 $1 #3
-JMP #3 $one
-Eq #0 $2 #3
-JMP #3 $two
-MOV $0 #1
-MOV $1 #2
-JMP $1 $other
+EQ #0, $1, #3
+JMP #3, $one
+Eq #0, $2, #3
+JMP #3, $two
+MOV $0, #1
+MOV $1, #2
+JMP $1, $other
 
 one:
 OUT $0
@@ -22,11 +22,11 @@ OUT #1
 OUT #2
 
 fibonacci:
-ADD #1 #2 #3
+ADD #1, #2, #3
 OUT #3
-MOV #2 #1
-MOV #3 #2
-ADD #0 $-1 #0
-EQ #0 $2 #3
-JMPF #3 $fibonacci
+MOV #2, #1
+MOV #3, #2
+ADD #0, $-1, #0
+EQ #0, $2, #3
+JMPF #3, $fibonacci
 HLT

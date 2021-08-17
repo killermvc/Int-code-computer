@@ -52,7 +52,7 @@ fn parse_argument(arg: &String) -> Result<(ParameterModes, String, bool), String
 	Ok((mode, output, is_tag))
 }
 
-fn parase_instruction<'a>(instr: &'a String) -> (&'a str, Option<&'a str>) {
+fn parse_instruction<'a>(instr: &'a String) -> (&'a str, Option<&'a str>) {
 	let possible_tag: Vec<&str> = instr.split(":").collect();
 	let mut tag: Option<&str> = None;
 	let instr = if possible_tag.len() > 1 {
@@ -86,7 +86,11 @@ fn main() {
 	let input = re.replace_all(input.as_str(), ":");
 	let input: Vec<Vec<String>> = input
 		.split("\n")
-		.map(|arg| arg.split(" ").map(|arg| arg.replace("\r", "")).collect())
+		.map(|arg| {
+			arg.split(",")
+				.map(|arg| arg.trim_start().trim_end().replace("\r", ""))
+				.collect()
+		})
 		.collect();
 
 	let mut output: Vec<String> = Vec::new();
@@ -97,11 +101,18 @@ fn main() {
 	let mut current_address: usize = 0;
 	for mut instruction in input {
 		line += 1;
-		if instruction[0].is_empty() || instruction[0].find("\r").unwrap_or(1) == 0 {
+		let instr: Vec<String> = instruction[0]
+			.split(" ")
+			.map(|arg| String::from(arg))
+			.collect();
+		if instr.len() > 1 {
+			instruction[0] = String::from(instr[1].clone());
+		}
+		if instr[0].is_empty() || instr[0].find("\r").unwrap_or(1) == 0 {
 			continue;
 		}
 
-		let (instr, tag_option) = parase_instruction(&instruction[0]);
+		let (instr, tag_option) = parse_instruction(&instr[0]);
 		if let Some(t) = tag_option {
 			tag_definitions.insert(String::from(t), current_address);
 		}
@@ -117,13 +128,13 @@ fn main() {
 
 		instruction.retain(|x| x != "");
 		let arg_count = opcodes[&instr].arguments_count;
-		if instruction.len() != arg_count as usize + 1 {
+		if instruction.len() != arg_count as usize && arg_count != 0 {
 			println!(
 				"Wrong number of arguments for instruction {} at line {} (expected {} found {})",
 				instr,
 				line,
 				arg_count,
-				instruction.len() - 1
+				instruction.len()
 			);
 			return;
 		}
@@ -134,7 +145,7 @@ fn main() {
 
 		for i in 0..arg_count as usize {
 			current_address += 1;
-			let arg = &instruction[i + 1];
+			let arg = &instruction[i];
 			let (mode, arg_string, is_tag) = match parse_argument(arg) {
 				Ok(o) => o,
 				Err(e) => {
