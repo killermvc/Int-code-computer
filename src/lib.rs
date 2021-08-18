@@ -120,21 +120,21 @@ pub mod instructions_module {
 			}
 		}
 
-		pub fn get_instruction_from_name(instr_name: &str) -> Result<Instructions, String> {
+		pub fn get_instruction_from_name(instr_name: &str) -> Option<Instructions> {
 			match instr_name.to_lowercase().as_str() {
-				"add" => Ok(Instructions::ADD),
-				"mul" => Ok(Instructions::MUL),
-				"in" => Ok(Instructions::IN),
-				"out" => Ok(Instructions::OUT),
-				"jmp" => Ok(Instructions::JMP),
-				"jmpf" => Ok(Instructions::JMPF),
-				"less" => Ok(Instructions::LESS),
-				"eq" => Ok(Instructions::EQ),
-				"arb" => Ok(Instructions::ARB),
-				"mov" => Ok(Instructions::MOV),
-				"grt" => Ok(Instructions::GRT),
-				"hlt" => Ok(Instructions::HLT),
-				_ => Err(format!("Unknown instruction {}", instr_name)),
+				"add" => Some(Instructions::ADD),
+				"mul" => Some(Instructions::MUL),
+				"in" => Some(Instructions::IN),
+				"out" => Some(Instructions::OUT),
+				"jmp" => Some(Instructions::JMP),
+				"jmpf" => Some(Instructions::JMPF),
+				"less" => Some(Instructions::LESS),
+				"eq" => Some(Instructions::EQ),
+				"arb" => Some(Instructions::ARB),
+				"mov" => Some(Instructions::MOV),
+				"grt" => Some(Instructions::GRT),
+				"hlt" => Some(Instructions::HLT),
+				_ => None,
 			}
 		}
 

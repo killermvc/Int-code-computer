@@ -67,10 +67,47 @@ fn parse_instruction<'a>(instr: &'a String) -> (&'a str, Option<&'a str>) {
 }
 
 #[derive(Debug)]
-struct TagPosition {
+struct CodePosition {
 	line: usize,
 	column: usize,
 	address: usize,
+}
+
+use std::fmt;
+
+impl fmt::Display for CodePosition {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "({}:{})", self.line, self.column)
+	}
+}
+
+enum CompileError<'a> {
+	ReservedTag(&'a str),
+	DuplicateTag(&'a str, &'a CodePosition),
+	UnknownInstruction(&'a str),
+	WrongArgumentsCount(u8, usize),
+	ArgumentParse(String),
+	UndefinedTag(&'a str),
+}
+
+fn print_error(error: CompileError, filename: &str, pos: CodePosition) {
+	print!("{}{}: ", filename, pos);
+	match error {
+		CompileError::ReservedTag(tag) => println!(
+			"Tag <{}> is reserved by the compiler and can't be declared.",
+			tag
+		),
+		CompileError::DuplicateTag(tag, declared) => {
+			println!("Tag <{}> was already defined at: {}", tag, declared)
+		}
+		CompileError::UnknownInstruction(instr) => println!("Unknown instruction <{}>", instr),
+		CompileError::WrongArgumentsCount(expected, found) => println!(
+			"Wrong number of arguments expected {} found {}",
+			expected, found
+		),
+		CompileError::ArgumentParse(e) => println!("Error while parsing argument: {}", e),
+		CompileError::UndefinedTag(tag) => println!("Tag <{}> was never declared.", tag),
+	}
 }
 
 fn main() {
@@ -99,8 +136,8 @@ fn main() {
 	let mut output: Vec<String> = Vec::new();
 	let opcodes = Instructions::new();
 	let mut line: usize = 0;
-	let mut tag_definitions: HashMap<String, TagPosition> = HashMap::new();
-	let mut tag_uses: HashMap<String, Vec<TagPosition>> = HashMap::new();
+	let mut tag_definitions: HashMap<String, CodePosition> = HashMap::new();
+	let mut tag_uses: HashMap<String, Vec<CodePosition>> = HashMap::new();
 	let mut current_address: usize = 0;
 	for mut instruction in input {
 		line += 1;
@@ -117,32 +154,38 @@ fn main() {
 
 		let (instr, tag_option) = parse_instruction(&instr[0]);
 		if let Some(t) = tag_option {
+			let pos = CodePosition {
+				line: line,
+				column: 0,
+				address: current_address,
+			};
 			if t == "data" {
-				println!("Error: data is a reserved tag and can't be defined");
+				print_error(CompileError::ReservedTag("data"), filename, pos);
 				return;
 			}
 			if tag_definitions.contains_key(t) {
-				println!(
-					"Error: duplicate tag <{}> (already defined at line {})",
-					t, tag_definitions[t].line
+				print_error(
+					CompileError::DuplicateTag(t, &tag_definitions[t]),
+					filename,
+					pos,
 				);
 				return;
 			}
-			tag_definitions.insert(
-				String::from(t),
-				TagPosition {
-					line: line,
-					column: 0,
-					address: current_address,
-				},
-			);
+			tag_definitions.insert(String::from(t), pos);
 		}
 
-		let instr = Instructions::get_instruction_from_name(instr);
-		let instr = match instr {
-			Ok(i) => i,
-			Err(e) => {
-				println!("{} at line {}", e, line);
+		let instr = match Instructions::get_instruction_from_name(instr) {
+			Some(i) => i,
+			None => {
+				print_error(
+					CompileError::UnknownInstruction(instr),
+					filename,
+					CodePosition {
+						line: line,
+						column: 0,
+						address: current_address,
+					},
+				);
 				return;
 			}
 		};
@@ -150,12 +193,14 @@ fn main() {
 		instruction.retain(|x| x != "");
 		let arg_count = opcodes[&instr].arguments_count;
 		if instruction.len() != arg_count as usize && arg_count != 0 {
-			println!(
-				"Wrong number of arguments for instruction {} at line {} (expected {} found {})",
-				instr,
-				line,
-				arg_count,
-				instruction.len()
+			print_error(
+				CompileError::WrongArgumentsCount(arg_count, instruction.len()),
+				filename,
+				CodePosition {
+					line: line,
+					column: 0,
+					address: current_address,
+				},
 			);
 			return;
 		}
@@ -170,7 +215,15 @@ fn main() {
 			let (mode, arg_string, is_tag) = match parse_argument(arg) {
 				Ok(o) => o,
 				Err(e) => {
-					println!("Error parsing argument {} at line {}: {}", i + 1, line, e);
+					print_error(
+						CompileError::ArgumentParse(e),
+						filename,
+						CodePosition {
+							line: line,
+							column: i + 1,
+							address: current_address,
+						},
+					);
 					return;
 				}
 			};
@@ -181,7 +234,7 @@ fn main() {
 					tag_uses.insert(arg_string.clone(), Vec::new());
 				}
 				let tags = tag_uses.get_mut(&arg_string).unwrap();
-				tags.push(TagPosition {
+				tags.push(CodePosition {
 					line: line,
 					column: i + 2,
 					address: current_address,
@@ -216,7 +269,7 @@ fn main() {
 
 	tag_definitions.insert(
 		String::from("data"),
-		TagPosition {
+		CodePosition {
 			line: 0,
 			column: 0,
 			address: output.len(),
@@ -226,10 +279,7 @@ fn main() {
 	for (tag, positions) in tag_uses {
 		if !tag_definitions.contains_key(&tag) {
 			for pos in positions {
-				println!(
-					"Undefined tag {} at (address: {}, line:{}, column: {})",
-					tag, pos.address, pos.line, pos.column
-				);
+				print_error(CompileError::UndefinedTag(&tag[..]), filename, pos);
 			}
 			return;
 		}
