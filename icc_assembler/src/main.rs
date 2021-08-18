@@ -54,19 +54,19 @@ fn parse_argument(arg: &String) -> Result<(ParameterModes, String, bool), String
     Ok((mode, output, is_tag))
 }
 
-fn parse_instruction<'a>(instr: &'a String) -> (&'a str, Option<&'a str>) {
+fn parse_instruction<'a>(instr: &'a String) -> (String, Option<String>) {
     let possible_tag: Vec<&str> = instr.split(":").collect();
-    let mut tag: Option<&str> = None;
+    let mut tag: Option<String> = None;
     let instr = if possible_tag.len() > 1 {
-        tag = Some(possible_tag[0]);
+        tag = Some(String::from(possible_tag[0]));
         possible_tag[1]
     } else {
         possible_tag[0]
     };
-    (instr, tag)
+    (String::from(instr), tag)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct CodePosition {
     line: usize,
     column: usize,
@@ -77,39 +77,72 @@ use std::fmt;
 
 impl fmt::Display for CodePosition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}:{})", self.line, self.column)
+        write!(f, "{}:{}", self.line, self.column)
     }
 }
 
-enum CompileError<'a> {
+enum CompileErrorType<'a> {
     ReservedTag(&'a str),
-    DuplicateTag(&'a str, &'a CodePosition),
-    UnknownInstruction(&'a str),
+    DuplicateTag(String, &'a CodePosition),
+    UnknownInstruction(String),
     WrongArgumentsCount(u8, usize),
     ArgumentParse(String),
-    UndefinedTag(&'a str),
+    UndefinedTag(String),
+    UnusedTag(String),
 }
 
-fn print_error(error: CompileError, filename: &str, pos: CodePosition) {
-    print!("{}{}: ", filename, pos);
-    match error {
-        CompileError::ReservedTag(tag) => println!(
-            "Tag <{}> is reserved by the compiler and can't be declared.",
-            tag
-        ),
-        CompileError::DuplicateTag(tag, declared) => {
-            println!("Tag <{}> was already defined at: {}", tag, declared)
+struct CompileError<'a> {
+    error_type: CompileErrorType<'a>,
+    file: &'a str,
+    pos: CodePosition,
+}
+
+impl CompileError<'_> {
+    fn new<'a>(error: CompileErrorType<'a>, file: &'a str, pos: CodePosition) -> CompileError<'a> {
+        CompileError {
+            error_type: error,
+            file: file,
+            pos: pos,
         }
-        CompileError::UnknownInstruction(instr) => println!("Unknown instruction <{}>", instr),
-        CompileError::WrongArgumentsCount(expected, found) => println!(
-            "Wrong number of arguments expected {} found {}",
-            expected, found
-        ),
-        CompileError::ArgumentParse(e) => println!("Error while parsing argument: {}", e),
-        CompileError::UndefinedTag(tag) => println!("Tag <{}> was never declared.", tag),
     }
 }
 
+impl fmt::Display for CompileError<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let file_name = format!("{}:{} ", self.file, self.pos);
+        match &self.error_type {
+            CompileErrorType::ReservedTag(tag) => write!(
+                f,
+                "{}Tag <{}> is reserved by the compiler and can't be declared.",
+                file_name, tag
+            ),
+            CompileErrorType::DuplicateTag(tag, declared) => {
+                write!(
+                    f,
+                    "{}Tag <{}> is already defined at: {}",
+                    file_name, tag, declared
+                )
+            }
+            CompileErrorType::UnknownInstruction(instr) => {
+                write!(f, "{}Unknown instruction <{}>", file_name, instr)
+            }
+            CompileErrorType::WrongArgumentsCount(expected, found) => write!(
+                f,
+                "{}Wrong number of arguments expected {} found {}",
+                file_name, expected, found
+            ),
+            CompileErrorType::ArgumentParse(e) => {
+                write!(f, "{}Error while parsing argument: {}", file_name, e)
+            }
+            CompileErrorType::UndefinedTag(tag) => {
+                write!(f, "{}undefined tag <{}>", file_name, tag)
+            }
+            CompileErrorType::UnusedTag(tag) => {
+                write!(f, "{}Tag <{}> is never used.", file_name, tag)
+            }
+        }
+    }
+}
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let arg_count = args.len();
@@ -138,6 +171,7 @@ fn main() {
     let mut line: usize = 0;
     let mut tag_definitions: HashMap<String, CodePosition> = HashMap::new();
     let mut tag_uses: HashMap<String, Vec<CodePosition>> = HashMap::new();
+    let mut errors_found: Vec<CompileError> = Vec::new();
     let mut current_address: usize = 0;
     for mut instruction in input {
         line += 1;
@@ -160,32 +194,37 @@ fn main() {
                 address: current_address,
             };
             if t == "data" {
-                print_error(CompileError::ReservedTag("data"), filename, pos);
-                return;
-            }
-            if tag_definitions.contains_key(t) {
-                print_error(
-                    CompileError::DuplicateTag(t, &tag_definitions[t]),
+                errors_found.push(CompileError::new(
+                    CompileErrorType::ReservedTag("data"),
                     filename,
                     pos,
-                );
+                ));
+                return;
+            }
+            if tag_definitions.contains_key(&t) {
+                let defined_pos = &tag_definitions[&t.clone()];
+                errors_found.push(CompileError::new(
+                    CompileErrorType::DuplicateTag(t, defined_pos),
+                    filename,
+                    pos,
+                ));
                 return;
             }
             tag_definitions.insert(String::from(t), pos);
         }
 
-        let instr = match Instructions::get_instruction_from_name(instr) {
+        let instr = match Instructions::get_instruction_from_name(&instr[..]) {
             Some(i) => i,
             None => {
-                print_error(
-                    CompileError::UnknownInstruction(instr),
+                errors_found.push(CompileError::new(
+                    CompileErrorType::UnknownInstruction(String::from(instr)),
                     filename,
                     CodePosition {
                         line: line,
                         column: 0,
                         address: current_address,
                     },
-                );
+                ));
                 return;
             }
         };
@@ -193,15 +232,15 @@ fn main() {
         instruction.retain(|x| x != "");
         let arg_count = opcodes[&instr].arguments_count;
         if instruction.len() != arg_count as usize && arg_count != 0 {
-            print_error(
-                CompileError::WrongArgumentsCount(arg_count, instruction.len()),
+            errors_found.push(CompileError::new(
+                CompileErrorType::WrongArgumentsCount(arg_count, instruction.len()),
                 filename,
                 CodePosition {
                     line: line,
                     column: 0,
                     address: current_address,
                 },
-            );
+            ));
             return;
         }
 
@@ -215,15 +254,15 @@ fn main() {
             let (mode, arg_string, is_tag) = match parse_argument(arg) {
                 Ok(o) => o,
                 Err(e) => {
-                    print_error(
-                        CompileError::ArgumentParse(e),
+                    errors_found.push(CompileError::new(
+                        CompileErrorType::ArgumentParse(e),
                         filename,
                         CodePosition {
                             line: line,
                             column: i + 1,
                             address: current_address,
                         },
-                    );
+                    ));
                     return;
                 }
             };
@@ -276,18 +315,44 @@ fn main() {
         },
     );
 
-    for (tag, positions) in tag_uses {
-        if !tag_definitions.contains_key(&tag) {
+    for (tag, positions) in &tag_uses {
+        if !tag_definitions.contains_key(tag) {
             for pos in positions {
-                print_error(CompileError::UndefinedTag(&tag[..]), filename, pos);
+                errors_found.push(CompileError {
+                    error_type: CompileErrorType::UndefinedTag(tag.clone()),
+                    file: &filename,
+                    pos: pos.clone(),
+                });
             }
-            return;
+        } else {
+            for pos in positions {
+                let address = tag_definitions[tag].address;
+                output[pos.address] = format!("{}", address);
+            }
         }
+    }
 
-        for pos in positions {
-            let address = tag_definitions[&tag].address;
-            output[pos.address] = format!("{}", address);
+    for (tag, pos) in tag_definitions {
+        if !tag_uses.contains_key(&tag) {
+            errors_found.push(CompileError {
+                error_type: CompileErrorType::UnusedTag(tag),
+                file: &filename,
+                pos: pos,
+            });
         }
+    }
+
+    if errors_found.len() > 0 {
+        let mut error_count = 0;
+        for error in errors_found {
+            if error_count > 50 {
+                break;
+            }
+            println!("{}", error);
+            error_count += 1;
+        }
+        println!("Build failed with {} errors.", error_count);
+        return;
     }
 
     let res = filename[1..].find(".");
