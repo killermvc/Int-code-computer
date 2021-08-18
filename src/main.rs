@@ -1,10 +1,8 @@
 use std::fs;
+extern crate icc;
 
-mod intcode;
-pub mod lib;
-
-use crate::lib::Memory;
-use intcode::IntCodeProgram;
+use icc::interpreter::IntCodeProgram;
+use icc::Memory;
 use std::vec;
 
 use std::io;

@@ -1,5 +1,5 @@
-use crate::lib::instructions_module::{Instruction, Instructions, ParameterModes};
-use crate::lib::Memory;
+use crate::instructions::{Instruction, Instructions, ParameterModes};
+use crate::Memory;
 use std::collections::HashMap;
 
 type OutputHandle = fn(i64);
