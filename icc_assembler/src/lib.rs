@@ -161,7 +161,7 @@ impl Assembler {
 		}
 	}
 
-	pub fn compile(&mut self) -> Result<Vec<String>, Vec<CompileError>> {
+	pub fn compile(&mut self, should_format: bool) -> Result<Vec<String>, Vec<CompileError>> {
 		let mut output: Vec<String> = Vec::new();
 		let opcodes = Instructions::new();
 		let mut errors_found: Vec<CompileError> = Vec::new();
@@ -266,7 +266,13 @@ impl Assembler {
 				}
 			}
 			modes.reverse();
-			let mut opcode_output = String::from("\n");
+			let mut opcode_output;
+			if should_format {
+				opcode_output = String::from("\n")
+			} else {
+				opcode_output = String::new();
+			}
+
 			let mut found_1 = false;
 			for mode in modes {
 				let (ch, found) = get_mode_number_from_mode(mode);
