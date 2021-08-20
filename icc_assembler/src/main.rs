@@ -9,13 +9,6 @@ use std::io::Write;
 mod lib;
 
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let arg_count = args.len();
-    if arg_count < 2 {
-        println!("Please enter a file name to compile");
-        return;
-    }
-
     let matches = App::new("icc_assembler")
         .version("1.0.0")
         .about("Compiles an icc assembly file to an icc \"binary\"")
@@ -44,13 +37,7 @@ fn main() {
         .get_matches();
 
     let should_format = matches.is_present("Format");
-    let filename = match matches.value_of("Input") {
-        Some(f) => f,
-        None => {
-            println!("Please enter a file to compile.");
-            return;
-        }
-    };
+    let filename = matches.value_of("Input").unwrap();
 
     let input = match fs::read_to_string(filename) {
         Ok(o) => o,
